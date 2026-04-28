@@ -1,0 +1,35 @@
+name: Xceed Ticket Monitor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # cada 5 minutos
+  workflow_dispatch:          # permite ejecutarlo manualmente también
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restaurar estado
+        uses: actions/cache@v4
+        with:
+          path: last_state.json
+          key: xceed-${{ github.run_id }}
+          restore-keys: xceed-
+
+      - run: pip install requests beautifulsoup4
+
+      - name: Ejecutar monitor
+        env:
+          EVENT_URL:           ${{ secrets.EVENT_URL }}
+          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:    ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python monitor.py
+
+      - name: Guardar estado
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: last_state.json
+          key: xceed-${{ github.run_id }}
